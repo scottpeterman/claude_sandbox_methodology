@@ -29,7 +29,7 @@ The human writes little or no code. The human's job is closer to **product owner
 ## Why the sandbox rather than an agent on your machine
 
 - **Nothing executes on your machine until you apply it.** The AI has no unauthorized credentials, no access to your repo you don't give, no ability to push. That is a safety property, not a limitation to work around.
-- **It runs inside an ordinary chat session.** No agent loop on your hardware, no local tool-permission prompts, no second bill.
+- **It runs inside an ordinary chat session.** No agent loop on your hardware, no local tool-permission prompts, typical agent token bill.
 - **Verification comes with the change.** Because the sandbox can build and run the product, "done" means built, tested and looked at, not "here is some code that should work".
 
 The cost is that the sandbox is Linux-only, has no GPU and no access to your devices. Section 10 and "Limits" below cover what that leaves for you to test.
