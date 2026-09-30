@@ -25,7 +25,7 @@ and QA. Nothing runs on your machine until you apply it.
 
 ## Why
 
-The reasoning and the lessons behind each rule: [docs/METHOD.md](docs/METHOD.md).
+The reasoning and the lessons behind each rule: [METHOD.md](METHOD.md).
 
 Built this way: [Easel](https://github.com/scottpeterman/easel),
 [Bounty Hunter](https://github.com/scottpeterman/bountyhunter).
