@@ -6,7 +6,7 @@ This is not "agent on your laptop" development. Nothing runs on your machine unt
 
 The examples come from real projects built this way:
 
-- [Easel](https://github.com/scottpeterman/easel): a layered image editor, C++20/Qt 6, GPU rendering, CI for Windows, Linux and macOS.
+- [Easel](https://github.com/scottpeterman/easel): a layered image editor, C++20/Qt 6, GPU rendering, Windows, Linux and macOS.
 - [Bounty Hunter](https://github.com/scottpeterman/bountyhunter): a single-file HTML raycaster game.
 - Go/Fyne desktop tools and Python network automation.
 
@@ -32,7 +32,7 @@ The human writes little or no code. The human's job is closer to **product owner
 - **It runs inside an ordinary chat session.** No agent loop on your hardware, no local tool-permission prompts, no second bill.
 - **Verification comes with the change.** Because the sandbox can build and run the product, "done" means built, tested and looked at, not "here is some code that should work".
 
-The cost is that the sandbox is Linux-only, has no GPU and no access to your devices. Sections 10 and "Limits" below cover what that leaves for you and CI.
+The cost is that the sandbox is Linux-only, has no GPU and no access to your devices. Section 10 and "Limits" below cover what that leaves for you to test.
 
 ---
 
@@ -51,7 +51,7 @@ Stacks that work end to end in a headless Linux container:
 
 Prefer **open source toolkits and libraries**. The AI can read their source to settle how something behaves rather than guessing, and can build them from source when a version has to match yours.
 
-Keep the build scripted (`scripts/build.sh` or similar) so that the sandbox, your machine and CI all run the same commands.
+Keep the build scripted (`scripts/build.sh` or similar) so that the sandbox and your machine run the same commands.
 
 ---
 
@@ -198,7 +198,7 @@ git am ~/Downloads/0001-Magic-wand-Color-to-Alpha-Trim-and-selection-masks.patch
 git push
 ```
 
-The commit keeps its message, authorship and co-author line, and CI runs on the push.
+The commit keeps its message, authorship and co-author line.
 
 **Private or very large projects: complete files in the project tree.** The AI returns whole files (never fragments or "change line 40 to…"), laid out in the project's directory structure, so you copy them over the tree in one step. A zip with the right paths works well.
 
@@ -206,13 +206,15 @@ Either way, no snippets to paste by hand. A change you have to reassemble is a c
 
 ---
 
-## 10. Let CI cover the platforms the sandbox can't
+## 10. The sandbox tests the code; you test the build
 
-The sandbox is Linux. GitHub Actions builds and tests Windows (MSVC) and macOS on every push, and publishes the installers (AppImage, dmg, Windows zip). The AI writes and fixes the workflow from the CI logs you paste back. The first Windows failure ("qt.conf path is not an absolute path") was fixed that way.
+The split is simple. The AI tests the code in the sandbox, with the test code living in the repo. You build on your own machines and QA the result. The test code is what matters: it travels with the repo, so the same tests run in the sandbox, on your machine and anywhere else you build.
+
+The sandbox is Linux, so Windows and macOS builds happen on your side. When a build fails there, paste the error back and the AI fixes it. CI (GitHub Actions, for example) can take over the per-platform builds and publish installers, but it's optional. Add it once the project has settled down.
 
 Some cross-platform work the sandbox *can* do, if the stack allows it. Pure Go command-line tools cross-compile from Linux to Windows and macOS with no C toolchain, and the sandbox can verify the result is genuinely a Windows binary (`file` reporting `PE32+ executable (console) x86-64`) before you ever open a Windows machine. Anything that links Qt or cgo has to be built on the target.
 
-Things neither the sandbox nor CI can verify go on an explicit list: real pen pressure, Metal on a real Mac, a real display's colour, an OS keyring, a real router. Those are your QA tasks. Platform packaging in particular resists sandbox verification, and the failures are specific: an ad-hoc-signed macOS bundle signed with the hardened runtime passes `codesign --verify` and then dies at launch on library validation; a Qt WebEngine helper needs its own path back to the app's frameworks or the renderer never starts. Expect to find those on the real machine, and expect the fix to be one line.
+Things the sandbox can't verify go on an explicit list: real pen pressure, Metal on a real Mac, a real display's colour, an OS keyring, a real router. Those are your QA tasks. Platform packaging in particular resists sandbox verification, and the failures are specific: an ad-hoc-signed macOS bundle signed with the hardened runtime passes `codesign --verify` and then dies at launch on library validation; a Qt WebEngine helper needs its own path back to the app's frameworks or the renderer never starts. Expect to find those on the real machine, and expect the fix to be one line.
 
 ---
 
@@ -271,7 +273,7 @@ The primer is the standing instructions. The recipe is what makes session five a
 
 1. Pick a stack from section 1.
 2. Put the project on GitHub, public if you can.
-3. Ask for a build script and CI for every platform you target, and get the empty app building and running before any features.
+3. Ask for a build script and a test suite, and get the empty app building, testing and running before any features.
 4. Ask for `docs/README_Claude_sandbox.md` and keep it current.
 5. For each feature: describe it, receive a tested patch plus a screenshot, apply it, use it on real work, report what's wrong.
 6. Keep a spec document with milestones; revise it as real use teaches you what matters.
