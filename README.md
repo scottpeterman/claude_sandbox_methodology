@@ -28,7 +28,7 @@ The human writes little or no code. The human's job is closer to **product owner
 
 ## Why the sandbox rather than an agent on your machine
 
-- **Nothing executes on your machine until you apply it.** The AI has no credentials, no access to your repo, no ability to push. That is a safety property, not a limitation to work around.
+- **Nothing executes on your machine until you apply it.** The AI has no unauthorized credentials, no access to your repo you don't give, no ability to push. That is a safety property, not a limitation to work around.
 - **It runs inside an ordinary chat session.** No agent loop on your hardware, no local tool-permission prompts, no second bill.
 - **Verification comes with the change.** Because the sandbox can build and run the product, "done" means built, tested and looked at, not "here is some code that should work".
 
@@ -234,7 +234,7 @@ Scratch work (screenshot harnesses, benchmarks, spikes) goes in a separate folde
 
 ## 13. Keep sensitive information out of the session
 
-Never upload sensitive information into a public Claude account. That means no configs, captures, screenshots, hostnames or addresses from a network you don't own. Use lab devices and synthetic data instead, which is what the fakes in section 8 are for.
+Never put configs, captures, screenshots, hostnames or addresses from a network you don't own into an AI service your organisation hasn't approved.
 
 ---
 
