@@ -60,6 +60,63 @@ cmake --install .
 
 Put the exact commands that worked into the recipe; it takes long enough that no session should have to rediscover them.
 
+**Then never build it twice: park the toolchain in a release.** Every session starts from a clean sandbox, so a source build is paid again each time. GitHub release downloads are reachable, so tar the install prefix once, attach it to a release on the project's own repo, and let a script in the repo fetch it. For Qt, the official prebuilt binaries (the `~/Qt/6.10.3/gcc_64` folder that `aqt` or the Qt installer creates) work as they are:
+
+```
+tar -C ~/Qt/6.10.3 -cJf qt-6.10.3-gcc_64.tar.xz gcc_64
+```
+
+Upload that to a release (Easel's is tagged `qt-toolchain`), and commit a setup script:
+
+```bash
+#!/usr/bin/env bash
+# scripts/sandbox-setup.sh: prebuilt Qt from the qt-toolchain release, plus
+# the system packages Qt Gui needs.
+set -euo pipefail
+
+QT_URL="https://github.com/you/project/releases/download/qt-toolchain/qt-6.10.3-gcc_64.tar.xz"
+QT_ROOT="/opt/qt"
+QT_DIR="$QT_ROOT/gcc_64"
+
+if [[ ! -f "$QT_DIR/lib/cmake/Qt6/Qt6Config.cmake" ]]; then
+    mkdir -p "$QT_ROOT"
+    curl -fsSL -o "$QT_ROOT/qt.tar.xz" "$QT_URL"
+    tar -xf "$QT_ROOT/qt.tar.xz" -C "$QT_ROOT"
+    rm -f "$QT_ROOT/qt.tar.xz"
+fi
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update || true
+apt-get install -y ninja-build xvfb libxcb-cursor0 libgl1-mesa-dev libopengl-dev libxkbcommon-dev libvulkan-dev
+
+"$QT_DIR/bin/qmake" -query QT_VERSION
+```
+
+A fresh session is then a clone and two commands:
+
+```
+scripts/sandbox-setup.sh
+LC_ALL=C.UTF-8 scripts/build.sh --qt /opt/qt/gcc_64
+```
+
+Measured on Easel: a 38 MB download that unpacks to 237 MB, ready in about 15 seconds, against a full Qt compile.
+
+What bit, in the order it bit:
+
+- **The sandbox can download a release asset but can't list them.** The release page and the GitHub API were both refused; `releases/download/<tag>/<file>` went through. So the exact filename has to be in the script (or the recipe), not looked up.
+- **A draft release 404s** the same way a wrong filename does. Publish it.
+- **Qt alone isn't enough.** CMake rejected Qt Gui until the OpenGL headers were installed ("Qt6Gui could not be found because dependency WrapOpenGL could not be found"), and the xcb platform plugin needs `libxcb-cursor0`. Both go in the script, with `apt-get update` first: the package index in a fresh sandbox is stale.
+- **Check the binaries load before trusting them.** The tarball was built on another distro; whether it runs is a question for `ldd`, not for hope:
+
+```
+for l in /opt/qt/gcc_64/lib/libQt6*.so.6 /opt/qt/gcc_64/plugins/platforms/*.so; do ldd $l | grep "not found"; done
+```
+
+- **Commit the script executable.** A file added through the GitHub web page or copied from a download lands as mode 644. `git update-index --chmod=+x scripts/sandbox-setup.sh`, then commit and push; `git ls-files -s` shows the mode that's actually in the repo.
+- **`LC_ALL=C.UTF-8`** on the build line: the sandbox's default locale is plain `C`, and Qt complains about it on every run.
+
+The same trick fits any toolchain the registries don't carry at the version you need: a cross-compiler, an SDK, a vendored dependency tree.
+
 A trap from the same project: since Qt 6.9, private modules have to be named explicitly (`find_package(Qt6 REQUIRED COMPONENTS CorePrivate GuiPrivate)`). It fails on your machine and in CI identically, so it's worth writing down once.
 
 **Work around unreachable hosts without touching files that ship.** Go example: when `proxy.golang.org` is blocked but GitHub isn't, clone the dependency from its GitHub mirror and point a *copy* of `go.mod` at it. The `go.mod` and `go.sum` in the tree never change:
